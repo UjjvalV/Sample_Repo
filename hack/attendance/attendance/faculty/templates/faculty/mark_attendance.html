@@ -1,0 +1,44 @@
+{% extends 'faculty/analytics_landing.html' %}
+{% block title %}Mark Attendance - {{ group.stream }} - {{ group.name }}{% endblock %}
+{% block content %}
+<div class="container my-4">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h3 class="mb-0">{{ group.stream }} - {{ group.name }}</h3>
+    <a href="{% url 'faculty_dashboard' %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i>Back</a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>Roll No</th>
+                <th>Name</th>
+                <th class="text-center">Present</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in students %}
+              <tr>
+                <td>{{ s.roll_number }}</td>
+                <td>{{ s.name }}</td>
+                <td class="text-center">
+                  <input type="checkbox" name="{{ s.id }}" value="present" {% if attendance_map.s.id == 'present' or attendance_map|get_item:s.id == 'present' %}checked{% endif %}>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="text-end">
+          <button class="btn btn-primary"><i class="fas fa-save me-2"></i>Save Attendance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

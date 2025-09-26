@@ -1,0 +1,27 @@
+<!-- student/templates/student/generate_faculty_code.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Faculty Code</title>
+</head>
+<body>
+    <h1>Faculty Access Code</h1>
+
+    <p>Current Code: <strong>{{ current_code }}</strong></p>
+
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit">Generate New Code</button>
+    </form>
+
+    <p><a href="{% url 'dashboard' %}">Back to Dashboard</a></p>
+
+    {% if messages %}
+        <ul>
+            {% for message in messages %}
+                <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</body>
+</html>

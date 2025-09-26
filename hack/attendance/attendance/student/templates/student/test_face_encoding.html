@@ -1,0 +1,104 @@
+{% extends 'student/base.html' %}
+{% block title %}Test Face Encoding{% endblock %}
+{% block content %}
+<div class="card p-4">
+    <h2 class="mb-3">Face Encoding Test</h2>
+    
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="row">
+        <div class="col-md-6">
+            <h4>User Information</h4>
+            <p><strong>Username:</strong> {{ user.username }}</p>
+            <p><strong>Email:</strong> {{ user.email }}</p>
+            <p><strong>Role:</strong> {{ user.role }}</p>
+            <p><strong>Has Face Encoding:</strong> 
+                {% if has_face_encoding %}
+                    <span class="text-success">Yes</span>
+                {% else %}
+                    <span class="text-danger">No</span>
+                {% endif %}
+            </p>
+            {% if has_face_encoding %}
+                <p><strong>Encoding Length:</strong> {{ face_encoding_length }} features</p>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-6">
+            <h4>Test Face Comparison</h4>
+            {% if has_face_encoding %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="test_encoding" class="form-label">Test Face Encoding (JSON)</label>
+                        <textarea name="test_encoding" class="form-control" rows="5" 
+                                  placeholder='Enter face encoding as JSON array, e.g., [0.1, 0.2, 0.3, ...]'></textarea>
+                        <div class="form-text">Enter a face encoding array to test against your stored encoding</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Test Comparison</button>
+                </form>
+                
+                {% if test_result %}
+                    <div class="mt-3">
+                        <h5>Test Results</h5>
+                        <p><strong>Match:</strong> 
+                            {% if test_result.match %}
+                                <span class="text-success">Yes</span>
+                            {% else %}
+                                <span class="text-danger">No</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Test Encoding Length:</strong> {{ test_result.test_encoding_length }}</p>
+                        <p><strong>Stored Encoding Length:</strong> {{ test_result.stored_encoding_length }}</p>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-warning">
+                    <p>No face encoding found for this user. Please sign up with face capture to test this functionality.</p>
+                    <a href="{% url 'signup' %}" class="btn btn-primary">Go to Signup</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="mt-4">
+        <h4>Sample Test Encoding</h4>
+        <p>You can use this sample encoding to test the comparison functionality:</p>
+        <div class="bg-light p-3 rounded">
+            <code id="sample-encoding">[0.1, 0.2, 0.3, 0.4, 0.5]</code>
+            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="copySample()">Copy</button>
+        </div>
+        <div class="form-text">Note: This is just a sample. For real testing, use an actual face encoding generated from an image.</div>
+    </div>
+</div>
+
+<script>
+function copySample() {
+    const sampleText = document.getElementById('sample-encoding').textContent;
+    navigator.clipboard.writeText(sampleText).then(function() {
+        alert('Sample encoding copied to clipboard!');
+    });
+}
+
+// Generate a more realistic sample encoding
+function generateSampleEncoding() {
+    const encoding = [];
+    for (let i = 0; i < 100; i++) {
+        encoding.push(Math.random());
+    }
+    document.getElementById('sample-encoding').textContent = JSON.stringify(encoding);
+}
+
+// Generate sample on page load
+window.onload = function() {
+    generateSampleEncoding();
+};
+</script>
+{% endblock %}

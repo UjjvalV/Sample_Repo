@@ -1,0 +1,298 @@
+{% extends 'student/base.html' %}
+{% block title %}Student Dashboard{% endblock %}
+
+{% block content %}
+<style>
+body {
+    margin: 0;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    min-height: 100vh;
+    color: #333;
+}
+
+.dashboard-container {
+    background: #f4f6f9;
+    border-radius: 20px;
+    margin: 20px auto;
+    padding: 30px;
+    max-width: 1400px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+/* Welcome header */
+.welcome-header {
+    background: linear-gradient(135deg, #2563eb, #1e3a8a);
+    color: white;
+    padding: 25px;
+    border-radius: 15px;
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.welcome-header h1 { font-size: 2rem; font-weight: 700; }
+.welcome-header p { font-size: 0.95rem; }
+
+/* Quick stats */
+.quick-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    flex: 1 1 15%;
+    background: white;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.1); }
+
+.stat-number { font-size: 1.8rem; font-weight: 700; }
+.stat-label { font-size: 0.8rem; color: #6c757d; }
+.stat-progress { height: 6px; border-radius: 5px; margin-top: 5px; }
+
+/* Features cards */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.feature-card {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+
+.feature-icon { font-size: 2.5rem; margin-bottom: 15px; display: block; }
+
+.btn-feature {
+    margin-top: 15px;
+    padding: 10px;
+    width: 100%;
+    font-weight: 600;
+    border-radius: 8px;
+    color: white;
+    border: none;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+/* Gradient buttons */
+.btn-scan { background: linear-gradient(135deg, #28a745, #20c997); }
+.btn-scan:hover { background: linear-gradient(135deg, #218838, #1ea085); }
+
+.btn-analytics { background: linear-gradient(135deg, #007bff, #6610f2); }
+.btn-analytics:hover { background: linear-gradient(135deg, #0056b3, #520dc2); }
+
+.btn-profile { background: linear-gradient(135deg, #6f42c1, #e83e8c); }
+.btn-profile:hover { background: linear-gradient(135deg, #59359a, #d91a72); }
+
+.btn-courses { background: linear-gradient(135deg, #fd7e14, #dc3545); }
+.btn-courses:hover { background: linear-gradient(135deg, #e8590c, #c82333); }
+
+/* Subject Performance */
+.subject-performance {
+    margin-bottom: 30px;
+}
+
+.subject-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 15px;
+    text-align: center;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.features-grid .feature-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 260px; /* or adjust according to content */
+}
+
+
+.subject-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+
+.progress { height: 6px; border-radius: 5px; }
+
+/* Recent Activity Table */
+.table-responsive { border-radius: 12px; overflow: hidden; }
+.table-hover tbody tr:hover { background-color: rgba(0,0,0,0.03); }
+.table th, .table td { vertical-align: middle; font-size: 0.85rem; }
+
+/* Quick Actions */
+.quick-actions { text-align: center; margin-top: 20px; }
+.quick-actions .btn { margin: 5px; border-radius: 8px; font-weight: 600; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stat-card { flex: 1 1 45%; }
+}
+@media (max-width: 480px) {
+    .stat-card { flex: 1 1 100%; }
+}
+</style>
+
+<div class="dashboard-container">
+    <!-- Welcome -->
+    <div class="welcome-header">
+        <h1><i class="fas fa-user-graduate me-2"></i>Welcome, {{ user.username }}!</h1>
+        <p>Student Dashboard - Manage your attendance and courses efficiently</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="quick-stats">
+        <div class="stat-card">
+            <div class="stat-number text-success">{{ attendance_rate|default:0 }}%</div>
+            <div class="stat-label">Overall Rate</div>
+            <div class="progress stat-progress">
+                <div class="progress-bar bg-success" style="width: {{ attendance_rate|default:0 }}%"></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number text-info">{{ weekly_attendance|default:0 }}%</div>
+            <div class="stat-label">Weekly Rate</div>
+            <small class="text-muted">({{ weekly_present|default:0 }}/{{ weekly_total|default:0 }})</small>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number text-warning">{{ monthly_attendance|default:0 }}%</div>
+            <div class="stat-label">Monthly Rate</div>
+            <small class="text-muted">({{ monthly_present|default:0 }}/{{ monthly_total|default:0 }})</small>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number text-primary">{{ total_classes|default:0 }}</div>
+            <div class="stat-label">Total Classes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number text-success">{{ present_days|default:0 }}</div>
+            <div class="stat-label">Present Days</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number text-danger">{{ absent_days|default:0 }}</div>
+            <div class="stat-label">Absent Days</div>
+        </div>
+    </div>
+
+    <!-- Main Features -->
+    <div class="features-grid">
+        <div class="feature-card">
+            <i class="fas fa-qrcode feature-icon text-success"></i>
+            <h5>Scan QR Code</h5>
+            <p class="text-muted">Scan your teacher's QR code to mark attendance</p>
+            <a href="/scan/" class="btn btn-feature btn-scan"><i class="fas fa-camera me-2"></i>Open Scanner</a>
+        </div>
+        <div class="feature-card">
+            <i class="fas fa-chart-line feature-icon text-primary"></i>
+            <h5>Attendance Analytics</h5>
+            <p class="text-muted">View detailed attendance reports</p>
+            <a href="/attendance-analytics/" class="btn btn-feature btn-analytics"><i class="fas fa-chart-bar me-2"></i>View Analytics</a>
+        </div>
+       
+        <div class="feature-card">
+            <i class="fas fa-book feature-icon text-warning"></i>
+            <h5>My Courses</h5>
+            <p class="text-muted">View your enrolled courses and schedules</p>
+            <a href="/courses/" class="btn btn-feature btn-courses"><i class="fas fa-graduation-cap me-2"></i>View Courses</a>
+        </div>
+    </div>
+
+    <!-- Subject Performance -->
+    {% if subject_stats %}
+    <div class="subject-performance">
+        <h5><i class="fas fa-chart-bar me-2"></i>Subject Performance</h5>
+        <div class="row mt-3">
+            {% for subject_name, stats in subject_stats.items %}
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="subject-card">
+                    <h6>{{ subject_name }}</h6>
+                    <div class="h5 {% if stats.rate >= 80 %}text-success{% elif stats.rate >= 60 %}text-warning{% else %}text-danger{% endif %}">
+                        {{ stats.rate }}%
+                    </div>
+                    <small class="text-muted">{{ stats.present }}/{{ stats.total }} classes</small>
+                    <div class="progress mt-2">
+                        <div class="progress-bar {% if stats.rate >= 80 %}bg-success{% elif stats.rate >= 60 %}bg-warning{% else %}bg-danger{% endif %}" 
+                             style="width: {{ stats.rate }}%"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Activity -->
+    <div class="feature-card">
+        <h5><i class="fas fa-clock me-2"></i>Recent Activity (Last 5 Days)</h5>
+        <div class="table-responsive mt-2">
+            <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Date</th><th>Subject</th><th>Teacher</th><th>Class</th><th>Status</th><th>Time</th><th>Verified</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if recent_records %}
+                        {% for r in recent_records %}
+                        <tr>
+                            <td><strong>{{ r.label }}</strong><br><small class="text-muted">{{ r.date }}</small></td>
+                            <td>{{ r.subject }}</td>
+                            <td>{{ r.teacher }}</td>
+                            <td>{{ r.class }}</td>
+                            <td>
+                                {% if r.status == 'Present' %}
+                                <span class="badge bg-success"><i class="fas fa-check me-1"></i>Present</span>
+                                {% elif r.status == 'Absent' %}
+                                <span class="badge bg-danger"><i class="fas fa-times me-1"></i>Absent</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ r.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ r.time }}</td>
+                            <td class="text-center">
+                                {% if r.face_verified %}
+                                <span class="badge bg-info"><i class="fas fa-user-check me-1"></i>Yes</span>
+                                {% else %}
+                                <span class="badge bg-secondary"><i class="fas fa-user-times me-1"></i>No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                <i class="fas fa-info-circle me-2"></i>No recent activity. Scan a QR code to mark attendance!
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        {% if recent_records %}
+        <div class="text-center mt-3">
+            <a href="/attendance-analytics/" class="btn btn-outline-primary"><i class="fas fa-chart-line me-2"></i>View Detailed Analytics</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions mt-4">
+        <a href="/logout/" class="btn btn-outline-danger"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
+        <a href="/" class="btn btn-outline-secondary"><i class="fas fa-home me-2"></i>Home</a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

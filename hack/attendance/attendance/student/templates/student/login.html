@@ -1,0 +1,211 @@
+{% extends 'student/base.html' %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<!-- FontAwesome for eye icon -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+    body {
+        margin: 0;
+        height: 100vh;
+        overflow: hidden;
+        background-color: #f4f6f9;
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+    }
+
+    .login-wrapper {
+        display: flex;
+        height: 87vh;
+        width: 100%;
+    }
+
+    /* Left branding section */
+    .login-left {
+        flex: 1;
+        background: linear-gradient(135deg, #1e3a8a, #2563eb);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 40px;
+    }
+
+    .logo {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        letter-spacing: 1px;
+    }
+
+    .login-left p {
+        max-width: 380px;
+        text-align: center;
+        font-size: 1rem;
+        line-height: 1.5;
+        opacity: 0.9;
+    }
+
+    /* Right login form */
+    .login-right {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px;
+        background: #ffffff;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 360px;
+    }
+
+    .login-card h2 {
+        font-weight: 600;
+        color: #1a1a1a;
+        text-align: center;
+        margin-bottom: 25px;
+        font-size: 1.6rem;
+    }
+
+    .form-label {
+        font-weight: 500;
+        font-size: 0.95rem;
+        color: #333;
+    }
+
+    .form-control {
+        border-radius: 8px;
+        padding: 10px 40px 10px 12px; /* space for eye */
+        font-size: 0.95rem;
+        border: 1px solid #d1d5db;
+        background-color: #fafafa;
+        transition: border-color 0.3s ease;
+        width: 100%;
+    }
+
+    .form-control:focus {
+        border-color: #2563eb;
+        background-color: #fff;
+        box-shadow: none;
+    }
+
+    .btn-login {
+        background: #2563eb;
+        color: white;
+        font-weight: 500;
+        border-radius: 8px;
+        padding: 10px;
+        transition: background 0.3s ease;
+        border: none;
+        font-size: 1rem;
+        margin-top: 10px;
+    }
+
+    .btn-login:hover {
+        background: #1e40af;
+    }
+
+    .signup-text {
+        margin-top: 20px;
+        text-align: center;
+        color: #555;
+        font-size: 0.9rem;
+    }
+
+    .signup-text a {
+        color: #2563eb;
+        font-weight: 500;
+        text-decoration: none;
+    }
+
+    .signup-text a:hover {
+        text-decoration: underline;
+    }
+
+    /* Password field with toggle */
+    .password-wrapper {
+        position: relative;
+    }
+
+    .toggle-password {
+        position: absolute;
+        right: 12px;
+        top:75%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        font-size: 1.1rem;
+        color: #666;
+    }
+
+    @media (max-width: 768px) {
+        .login-wrapper {
+            flex-direction: column;
+        }
+        .login-left {
+            flex: none;
+            height: 35vh;
+        }
+        .login-right {
+            flex: none;
+            height: 65vh;
+        }
+    }
+</style>
+
+<div class="login-wrapper">
+    <!-- Left branding -->
+    <div class="login-left">
+        <div class="logo">AttendEase</div>
+        <p>
+            A smart and reliable Attendance Management System for colleges.  
+            Students and faculty can log in to track, mark, and manage attendance seamlessly.
+        </p>
+    </div>
+
+    <!-- Right login form -->
+    <div class="login-right">
+        <div class="login-card">
+            <h2>Login</h2>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="username" class="form-label">ID</label>
+                    <input type="text" name="username" class="form-control" placeholder="Enter ID" required>
+                    <small class="text-muted">
+                        Students: use Roll No | Faculty: use Username
+                    </small>
+                </div>
+
+                <div class="mb-3 password-wrapper">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" name="password" class="form-control" placeholder="Enter Password" id="password" required>
+                    <i class="fa-solid fa-eye toggle-password" id="togglePassword"></i>
+                </div>
+
+                <button type="submit" class="btn btn-login w-100">Login</button>
+            </form>
+
+            <p class="signup-text">
+                Don’t have an account? <a href="{% url 'signup' %}">Sign up</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordField = document.getElementById('password');
+
+    togglePassword.addEventListener('click', function () {
+        const type = passwordField.type === 'password' ? 'text' : 'password';
+        passwordField.type = type;
+
+        // toggle eye / eye-slash
+        this.classList.toggle('fa-eye');
+        this.classList.toggle('fa-eye-slash');
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,204 @@
+{% extends "student/base.html" %}
+{% load static %}
+
+{% block title %}Debug Attendance Records{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-bug me-2"></i>
+                        Debug: Attendance Records
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Database Statistics -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h3>{{ total_records }}</h3>
+                                    <p class="mb-0">Total Records</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h3>{{ today_records }}</h3>
+                                    <p class="mb-0">Today's Records</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h3>{{ students_count }}</h3>
+                                    <p class="mb-0">Students</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <h3>{{ teachers_count }}</h3>
+                                    <p class="mb-0">Teachers</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Attendance Records -->
+                    <h5>Recent Attendance Records</h5>
+                    {% if recent_records %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Teacher</th>
+                                    <th>Subject</th>
+                                    <th>Group</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                    <th>Face Verified</th>
+                                    <th>QR Data</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in recent_records %}
+                                <tr>
+                                    <td>
+                                        {{ record.student.name }}<br>
+                                        <small class="text-muted">{{ record.student.roll_number }}</small>
+                                    </td>
+                                    <td>
+                                        {% if record.teacher %}
+                                            {{ record.teacher.name }}<br>
+                                            <small class="text-muted">{{ record.teacher.roll_no }}</small>
+                                        {% else %}
+                                            <span class="text-muted">No Teacher</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.subject %}
+                                            {{ record.subject.name }}<br>
+                                            <small class="text-muted">{{ record.subject.code }}</small>
+                                        {% else %}
+                                            <span class="text-muted">No Subject</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {{ record.group.stream }} - {{ record.group.name }}<br>
+                                        <small class="text-muted">ID: {{ record.group.id }}</small>
+                                    </td>
+                                    <td>{{ record.attendance_date }}</td>
+                                    <td>{{ record.attendance_time }}</td>
+                                    <td>
+                                        {% if record.status == 'present' %}
+                                            <span class="badge bg-success">Present</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Absent</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.face_verified %}
+                                            <span class="badge bg-success">Yes</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">No</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.qr_data %}
+                                            <button class="btn btn-sm btn-outline-info" onclick="showQRData({{ record.qr_data|safe }})">
+                                                View QR Data
+                                            </button>
+                                        {% else %}
+                                            <span class="text-muted">No QR Data</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No attendance records found in the database.
+                    </div>
+                    {% endif %}
+
+                    <!-- Database Entities -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h6>Database Entities:</h6>
+                            <ul class="list-group">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Students</span>
+                                    <span class="badge bg-primary">{{ students_count }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Teachers</span>
+                                    <span class="badge bg-primary">{{ teachers_count }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Subjects</span>
+                                    <span class="badge bg-primary">{{ subjects_count }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Groups</span>
+                                    <span class="badge bg-primary">{{ groups_count }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Actions:</h6>
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'qr_scanner' %}" class="btn btn-primary">
+                                    <i class="fas fa-qrcode me-2"></i>Test QR Scanner
+                                </a>
+                                <button class="btn btn-info" onclick="location.reload()">
+                                    <i class="fas fa-refresh me-2"></i>Refresh Data
+                                </button>
+                                <a href="{% url 'student_dashboard' %}" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- QR Data Modal -->
+<div class="modal fade" id="qrDataModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">QR Code Data</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <pre id="qrDataContent" class="bg-light p-3 rounded"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showQRData(qrData) {
+    document.getElementById('qrDataContent').textContent = JSON.stringify(qrData, null, 2);
+    var modal = new bootstrap.Modal(document.getElementById('qrDataModal'));
+    modal.show();
+}
+</script>
+{% endblock %}

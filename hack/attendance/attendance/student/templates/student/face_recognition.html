@@ -1,0 +1,971 @@
+{% extends 'student/base.html' %}
+{% block title %}Face Recognition Verification{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <!-- Face Recognition Icon -->
+                    <div class="mb-4">
+                        <i class="fas fa-user-check fa-5x text-primary"></i>
+                    </div>
+                    
+                    <!-- Title -->
+                    <h2 class="text-primary mb-3">Face Recognition Verification</h2>
+                    <p class="text-muted mb-4">
+                        Class ID matched! Please position your face in front of the camera for attendance verification.
+                    </p>
+                    
+                    <!-- Error Message -->
+                    {% if error_message %}
+                    <div class="alert alert-danger mb-4">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Error</h5>
+                        <p class="mb-0">{{ error_message }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Debug Information -->
+                    <div class="alert alert-info mb-4" style="display: none;" id="debugInfo">
+                        <h6><i class="fas fa-bug me-2"></i>Debug Information</h6>
+                        <div id="debugContent"></div>
+                    </div>
+                    
+                    <!-- QR Code Information -->
+                    {% if scan_info %}
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="fas fa-qrcode me-2"></i>QR Code Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-2">
+                                        <strong>Subject ID:</strong> 
+                                        <span class="badge bg-info">{{ scan_info.subject_id }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Class ID:</strong> 
+                                        <span class="badge bg-success">{{ scan_info.class_id }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Teacher:</strong> 
+                                        <span class="badge bg-warning">{{ scan_info.teacher_roll_no }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Generated:</strong> 
+                                        <span class="text-muted small">{{ scan_info.generated_time }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="fas fa-user me-2"></i>Student Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-2">
+                                        <strong>Student ID:</strong> 
+                                        <span class="badge bg-success">{{ scan_info.student_id }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Name:</strong> 
+                                        <span class="text-primary">{{ user.username }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Roll Number:</strong> 
+                                        <span class="text-info">{% if student_profile %}{{ student_profile.roll_number }}{% else %}N/A{% endif %}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Group:</strong> 
+                                        <span class="text-secondary">{% if student_group %}{{ student_group.stream }} - {{ student_group.name }}{% else %}N/A{% endif %}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Face Recognition Section -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-camera me-2"></i>Face Recognition</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <video id="faceVideo" width="100%" height="300" style="border: 2px solid #007bff; border-radius: 10px;"></video>
+                                <canvas id="faceCanvas" style="display: none;"></canvas>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <button id="startFaceRecognition" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-camera me-2"></i>
+                                    Start Face Recognition
+                                </button>
+                                <button id="stopFaceRecognition" class="btn btn-danger btn-lg" style="display: none;">
+                                    <i class="fas fa-stop me-2"></i>
+                                    Stop Recognition
+                                </button>
+                                <button id="testCapture" class="btn btn-info btn-lg" style="display: none;">
+                                    <i class="fas fa-test-tube me-2"></i>
+                                    Test Capture
+                                </button>
+                                <button id="simulateSuccess" class="btn btn-warning btn-lg" style="display: none;">
+                                    <i class="fas fa-magic me-2"></i>
+                                    Simulate Success
+                                </button>
+                                <button id="resetLiveness" class="btn btn-outline-secondary btn-lg" style="display: none;">
+                                    <i class="fas fa-redo me-2"></i>
+                                    Reset Liveness
+                                </button>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Instructions:</strong> Position your face clearly in front of the camera. Make sure you have good lighting.
+                                <br><strong>Liveness Detection:</strong> Please blink your eyes and move your head slightly to verify you're a real person.
+                            </div>
+                            
+                            <!-- Encouraging Message Area -->
+                            <div id="encouragingMessage" class="alert alert-success" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-hand-point-up fa-2x me-3 text-success"></i>
+                                    <div>
+                                        <h6 class="mb-1"><strong id="encouragingTitle">Ready to try again!</strong></h6>
+                                        <div id="encouragingText">Click "Start Face Recognition" to begin scanning your face.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="faceRecognitionStatus" class="alert alert-warning">
+                                <h6>Face Recognition Status:</h6>
+                                <div id="faceStatusContent">Ready to start face recognition...</div>
+                            </div>
+                            
+                            <div id="livenessStatus" class="alert alert-secondary" style="display: none;">
+                                <h6><i class="fas fa-shield-alt me-2"></i>Liveness Detection Status:</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Blinks Detected:</strong> <span id="blinkCount" class="badge bg-info">0</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Head Movement:</strong> <span id="headMovement" class="badge bg-secondary">Not Detected</span>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <strong>Liveness Verified:</strong> <span id="livenessVerified" class="badge bg-warning">No</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="mt-4">
+                        <button id="verifyAttendance" class="btn btn-success btn-lg me-3" disabled>
+                            <i class="fas fa-check me-2"></i>
+                            Verify Attendance
+                        </button>
+                        <a href="{% url 'qr_scanner' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-qrcode me-2"></i>
+                            Scan New QR Code
+                        </a>
+                    </div>
+                    
+                    <!-- Security Notice -->
+                    <div class="mt-4">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            Face recognition ensures secure and accurate attendance marking
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let isFaceRecognitionActive = false;
+let faceRecognitionInterval = null;
+let faceVerified = false;
+let livenessCheckInterval = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    setupEventListeners();
+    updateFaceStatus('Ready to start face recognition...');
+    
+    // Debug logging disabled
+    
+    showDebugInfo('Page initialized successfully');
+    showDebugInfo('QR Data available: ' + ({{ qr_data|default:"null"|safe }} ? 'Yes' : 'No'));
+    showDebugInfo('Scan Info available: ' + ({{ scan_info|default:"null"|safe }} ? 'Yes' : 'No'));
+    
+    // Automatically start face recognition when page loads
+    setTimeout(() => {
+        showDebugInfo('Auto-starting face recognition...');
+        startFaceRecognition();
+    }, 1000);
+});
+
+function setupEventListeners() {
+    document.getElementById('startFaceRecognition').addEventListener('click', startFaceRecognition);
+    document.getElementById('stopFaceRecognition').addEventListener('click', stopFaceRecognition);
+    document.getElementById('testCapture').addEventListener('click', testCapture);
+    document.getElementById('simulateSuccess').addEventListener('click', simulateSuccess);
+    document.getElementById('resetLiveness').addEventListener('click', resetLivenessState);
+    document.getElementById('verifyAttendance').addEventListener('click', verifyAttendance);
+}
+
+function updateFaceStatus(message) {
+    const statusContent = document.getElementById('faceStatusContent');
+    statusContent.innerHTML = '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+    // Console logging disabled
+}
+
+function showEncouragingMessage(data) {
+    const encouragingMessage = document.getElementById('encouragingMessage');
+    const encouragingTitle = document.getElementById('encouragingTitle');
+    const encouragingText = document.getElementById('encouragingText');
+    
+    if (data.prompt_message) {
+        // Show the encouraging message with specific guidance
+        encouragingTitle.textContent = data.prompt_message;
+        
+        if (data.details && data.details.failure_type === 'face_not_detected') {
+            encouragingText.innerHTML = '💡 <strong>Tips:</strong> Ensure good lighting, look directly at camera, remove glasses/hats, make sure your face fills the camera view.';
+        } else if (data.details && data.details.failure_type === 'liveness_failed') {
+            encouragingText.innerHTML = '💡 <strong>Tips:</strong> Blink naturally, move your head slightly (left-right or up-down), make natural facial movements.';
+        } else {
+            encouragingText.innerHTML = '💡 <strong>Tips:</strong> Look directly at camera, blink naturally, move your head slightly, ensure good lighting.';
+        }
+        
+        // Change the alert style based on failure type
+        encouragingMessage.className = 'alert alert-warning';
+        encouragingMessage.querySelector('i').className = 'fas fa-hand-point-up fa-2x me-3 text-warning';
+    } else {
+        // Default encouraging message
+        encouragingTitle.textContent = 'Ready to try again!';
+        encouragingText.innerHTML = 'Click "Start Face Recognition" to begin scanning your face.';
+        encouragingMessage.className = 'alert alert-success';
+        encouragingMessage.querySelector('i').className = 'fas fa-hand-point-up fa-2x me-3 text-success';
+    }
+    
+    encouragingMessage.style.display = 'block';
+    
+    // Hide the encouraging message when face recognition starts
+    setTimeout(() => {
+        const startBtn = document.getElementById('startFaceRecognition');
+        if (startBtn) {
+            startBtn.addEventListener('click', function hideEncouragingMessage() {
+                encouragingMessage.style.display = 'none';
+                startBtn.removeEventListener('click', hideEncouragingMessage);
+            }, { once: true });
+        }
+    }, 100);
+}
+
+function hideEncouragingMessage() {
+    const encouragingMessage = document.getElementById('encouragingMessage');
+    encouragingMessage.style.display = 'none';
+}
+
+function showDebugInfo(message) {
+    // Debug information disabled - no output
+    return;
+}
+
+function startFaceRecognition() {
+    updateFaceStatus('Starting face recognition...');
+    hideEncouragingMessage(); // Hide encouraging message when starting
+    const video = document.getElementById('faceVideo');
+    const canvas = document.getElementById('faceCanvas');
+    const context = canvas.getContext('2d');
+    
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        updateFaceStatus('Camera not supported on this device');
+        alert('Camera not supported on this device. Please use a modern browser.');
+        return;
+    }
+    
+    // Try to get camera access
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            facingMode: 'user',  // Front camera for face recognition
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+        } 
+    })
+    .then(function(stream) {
+        updateFaceStatus('Camera access granted');
+        video.srcObject = stream;
+        video.play();
+        
+        video.onloadedmetadata = function() {
+            updateFaceStatus('Video metadata loaded - Starting face detection');
+            
+            // Start face recognition loop
+            let faceRecognitionAttempts = 0;
+            const maxAttempts = 10; // Try face recognition 10 times
+            
+            faceRecognitionInterval = setInterval(() => {
+                if (video.readyState === video.HAVE_ENOUGH_DATA && faceRecognitionAttempts < maxAttempts) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    faceRecognitionAttempts++;
+                    showDebugInfo(`Face recognition attempt ${faceRecognitionAttempts}/${maxAttempts}`);
+                    
+                    // Perform actual face recognition
+                    performActualFaceRecognition();
+                    
+                    // If we've reached max attempts, stop trying
+                    if (faceRecognitionAttempts >= maxAttempts) {
+                        showDebugInfo('Face recognition: Maximum attempts reached, stopping...');
+                        updateFaceStatus('Face recognition attempts completed. Please try again or use manual verification.');
+                        stopFaceRecognition();
+                    }
+                }
+            }, 2000); // Check every 2 seconds to give time for server response
+            
+            isFaceRecognitionActive = true;
+            
+            // Update UI
+            document.getElementById('startFaceRecognition').style.display = 'none';
+            document.getElementById('stopFaceRecognition').style.display = 'inline-block';
+            document.getElementById('testCapture').style.display = 'inline-block';
+            document.getElementById('simulateSuccess').style.display = 'inline-block';
+            document.getElementById('resetLiveness').style.display = 'inline-block';
+            
+            // Start liveness checking
+            startLivenessCheck();
+        };
+    })
+    .catch(function(err) {
+        updateFaceStatus('Camera access error: ' + err.message);
+        console.error('Camera access error:', err);
+        
+        if (err.name === 'NotAllowedError') {
+            alert('Camera permission denied. Please allow camera access and try again.');
+        } else if (err.name === 'NotFoundError') {
+            alert('No camera found on this device.');
+        } else {
+            alert('Error accessing camera: ' + err.message);
+        }
+    });
+}
+
+function stopFaceRecognition() {
+    updateFaceStatus('Stopping face recognition...');
+    
+    if (faceRecognitionInterval) {
+        clearInterval(faceRecognitionInterval);
+        faceRecognitionInterval = null;
+    }
+    
+    const video = document.getElementById('faceVideo');
+    if (video.srcObject) {
+        const tracks = video.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+        video.srcObject = null;
+    }
+    
+    isFaceRecognitionActive = false;
+    
+    // Update UI
+    document.getElementById('startFaceRecognition').style.display = 'inline-block';
+    document.getElementById('stopFaceRecognition').style.display = 'none';
+    document.getElementById('testCapture').style.display = 'none';
+    document.getElementById('simulateSuccess').style.display = 'none';
+    document.getElementById('resetLiveness').style.display = 'none';
+    
+    // Stop liveness checking
+    stopLivenessCheck();
+}
+
+function testCapture() {
+    updateFaceStatus('Testing face capture...');
+    showDebugInfo('Testing face capture manually...');
+    
+    const faceEncoding = captureFaceEncoding();
+    if (faceEncoding) {
+        updateFaceStatus('Face capture test successful!');
+        showDebugInfo('Face encoding captured: ' + faceEncoding.substring(0, 100) + '...');
+        alert('Face capture test successful! Check debug info for details.');
+    } else {
+        updateFaceStatus('Face capture test failed!');
+        showDebugInfo('Face capture test failed - check debug info above');
+        alert('Face capture test failed! Check debug info for details.');
+    }
+}
+
+function simulateSuccess() {
+    updateFaceStatus('Manually simulating face recognition success...');
+    showDebugInfo('Manual simulation triggered');
+    
+    // Simulate successful face detection
+    updateFaceStatus('Face detected and verified! ✅');
+    faceVerified = true;
+    document.getElementById('verifyAttendance').disabled = false;
+    document.getElementById('verifyAttendance').classList.remove('btn-secondary');
+    document.getElementById('verifyAttendance').classList.add('btn-success');
+    document.getElementById('verifyAttendance').innerHTML = '<i class="fas fa-check-circle me-2"></i>Verify Attendance (Face Verified)';
+    showDebugInfo('Face verification completed! You can now verify attendance.');
+    
+    // Stop face recognition if it's running
+    if (isFaceRecognitionActive) {
+        stopFaceRecognition();
+    }
+}
+
+async function performActualFaceRecognition() {
+    // Perform actual face recognition using captured face encoding
+    const faceEncoding = await captureFaceEncoding();
+    
+    if (!faceEncoding) {
+        showDebugInfo('Face recognition: No face encoding captured');
+        return false;
+    }
+    
+    showDebugInfo('Face recognition: Face encoding captured, sending for verification...');
+    
+    // Send face encoding for verification
+    fetch('/face-recognition/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            action: 'verify_face',
+            face_encoding: faceEncoding,
+            qr_data: getQRData()
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showDebugInfo('Face recognition: SUCCESS - Face verified!');
+            updateFaceStatus('Face detected and verified! ✅');
+            faceVerified = true;
+            document.getElementById('verifyAttendance').disabled = false;
+            document.getElementById('verifyAttendance').classList.remove('btn-secondary');
+            document.getElementById('verifyAttendance').classList.add('btn-success');
+            document.getElementById('verifyAttendance').innerHTML = '<i class="fas fa-check-circle me-2"></i>Verify Attendance (Face Verified)';
+            stopFaceRecognition();
+            
+            // Show success alert
+            let alertMessage = '✅ Face Verification Successful!\n\n';
+            alertMessage += 'Your face has been verified and matched with your stored profile.\n\n';
+            alertMessage += 'You can now click "Verify Attendance" to mark your attendance.';
+            alert(alertMessage);
+        } else if (data.status === 'already_marked') {
+            showDebugInfo('Face recognition: SUCCESS - Face verified, but attendance already marked!');
+            updateFaceStatus('Face verified, but attendance already marked for today! ⚠️');
+            faceVerified = true;
+            document.getElementById('verifyAttendance').disabled = false;
+            document.getElementById('verifyAttendance').classList.remove('btn-secondary');
+            document.getElementById('verifyAttendance').classList.add('btn-warning');
+            document.getElementById('verifyAttendance').innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i>Attendance Already Marked';
+            
+            // Show proper alert for already marked attendance
+            let alertMessage = '⚠️ Attendance Already Marked!\n\n';
+            alertMessage += 'Your face has been successfully verified, but your attendance was already marked for today.\n\n';
+            
+            if (data.existing_record) {
+                const existingTime = data.existing_record.time;
+                const existingDate = data.existing_record.date;
+                alertMessage += `Previous attendance marked:\n`;
+                alertMessage += `• Date: ${existingDate}\n`;
+                alertMessage += `• Time: ${existingTime}\n\n`;
+                showDebugInfo(`Existing attendance: ${existingDate} at ${existingTime}`);
+                updateFaceStatus(`Face verified, but attendance already marked for today at ${existingTime}! ⚠️`);
+            }
+            
+            alertMessage += 'No duplicate attendance was created.';
+            alert(alertMessage);
+            
+            stopFaceRecognition();
+        } else {
+            showDebugInfo('Face recognition: FAILED - ' + data.message);
+            updateFaceStatus('Face verification failed: ' + data.message);
+            
+            // Show encouraging message area
+            showEncouragingMessage(data);
+            
+            // Show encouraging alert for verification failure
+            let alertMessage = '';
+            
+            if (data.prompt_message) {
+                // Use the new encouraging prompt message
+                alertMessage = '🔄 ' + data.prompt_message + '\n\n';
+                alertMessage += 'Details: ' + data.message + '\n\n';
+            } else {
+                // Fallback to old format
+                alertMessage = '❌ Face Verification Failed!\n\n';
+                alertMessage += 'Error: ' + data.message + '\n\n';
+            }
+            
+            if (data.liveness_status) {
+                alertMessage += 'Current Status:\n';
+                alertMessage += '• Face Match: ' + (data.liveness_status.face_match ? '✅ Yes' : '❌ No') + '\n';
+                alertMessage += '• Liveness Verified: ' + (data.liveness_status.liveness_verified ? '✅ Yes' : '❌ No') + '\n';
+                alertMessage += '• Blink Count: ' + data.liveness_status.blink_count + '\n';
+                alertMessage += '• Head Moved: ' + (data.liveness_status.head_moved ? '✅ Yes' : '❌ No') + '\n\n';
+            }
+            
+            // Add encouraging tips based on failure type
+            if (data.details && data.details.failure_type === 'face_not_detected') {
+                alertMessage += '💡 Tips for better face detection:\n';
+                alertMessage += '• Ensure good lighting on your face\n';
+                alertMessage += '• Look directly at the camera\n';
+                alertMessage += '• Remove glasses or hats if possible\n';
+                alertMessage += '• Make sure your face fills the camera view\n';
+            } else if (data.details && data.details.failure_type === 'liveness_failed') {
+                alertMessage += '💡 Tips for liveness verification:\n';
+                alertMessage += '• Blink naturally while looking at camera\n';
+                alertMessage += '• Move your head slightly (left-right or up-down)\n';
+                alertMessage += '• Don\'t hold your head completely still\n';
+                alertMessage += '• Make natural facial movements\n';
+            } else {
+                alertMessage += '💡 General tips:\n';
+                alertMessage += '• Look directly at the camera\n';
+                alertMessage += '• Blink your eyes naturally\n';
+                alertMessage += '• Move your head slightly\n';
+                alertMessage += '• Ensure good lighting\n';
+            }
+            
+            alertMessage += '\n🔄 Click "Start Face Recognition" to try again!';
+            
+            alert(alertMessage);
+            
+            // Reset the face recognition state to allow retry
+            faceVerified = false;
+            document.getElementById('verifyAttendance').disabled = true;
+            document.getElementById('verifyAttendance').classList.remove('btn-success');
+            document.getElementById('verifyAttendance').classList.add('btn-secondary');
+            document.getElementById('verifyAttendance').innerHTML = '<i class="fas fa-user-check me-2"></i>Verify Attendance';
+        }
+    })
+    .catch(error => {
+        showDebugInfo('Face recognition: ERROR - ' + error.message);
+        updateFaceStatus('Error during face verification: ' + error.message);
+        
+        // Show alert for network/technical errors
+        let alertMessage = '❌ Technical Error!\n\n';
+        alertMessage += 'Error: ' + error.message + '\n\n';
+        alertMessage += 'This might be a network issue or server problem.\n';
+        alertMessage += 'Please try again or contact support if the problem persists.';
+        
+        alert(alertMessage);
+    });
+    
+    return false; // Don't return success immediately, wait for server response
+}
+
+function getQRData() {
+    // Get QR data from template or use fallback
+    let qrData;
+    try {
+        qrData = {{ qr_data|default:"null"|safe }};
+    } catch (error) {
+        console.error('Error parsing QR data:', error);
+        qrData = null;
+    }
+    
+    if (!qrData) {
+        // Use fallback QR data for testing - get from actual QR scan
+        qrData = {
+            class_id: '2',
+            subject_id: 'MTH101', // Use actual subject code instead of TEST
+            teacher_roll_no: 'T001', // This will be overridden by actual QR data
+            start_time: Math.floor(Date.now() / 1000).toString()
+        };
+    }
+    
+    return qrData;
+}
+
+async function captureFaceEncoding() {
+    // Capture face encoding from the video using canvas
+    const video = document.getElementById('faceVideo');
+    const canvas = document.getElementById('faceCanvas');
+    const context = canvas.getContext('2d');
+    
+    showDebugInfo('Attempting to capture face encoding...');
+    showDebugInfo('Video ready state: ' + video.readyState);
+    showDebugInfo('Video srcObject: ' + (video.srcObject ? 'Available' : 'Not available'));
+    showDebugInfo('Video videoWidth: ' + video.videoWidth);
+    showDebugInfo('Video videoHeight: ' + video.videoHeight);
+    
+    // Check if video is ready and has data
+    if (video.readyState >= video.HAVE_CURRENT_DATA && video.videoWidth > 0 && video.videoHeight > 0) {
+        try {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            showDebugInfo('Successfully captured video frame');
+            
+            // Convert canvas to base64 data URL for face encoding
+            const canvasDataUrl = canvas.toDataURL('image/png');
+            showDebugInfo('Canvas data URL generated: ' + canvasDataUrl.substring(0, 50) + '...');
+            
+            // Generate face encoding similar to signup process
+            try {
+                const faceEncoding = await generateFaceEncoding(canvasDataUrl);
+                
+                if (faceEncoding) {
+                    const faceEncodingData = {
+                        face_detected: true,
+                        canvas_data_url: canvasDataUrl,
+                        face_encoding: faceEncoding,
+                        timestamp: new Date().toISOString(),
+                        video_width: video.videoWidth,
+                        video_height: video.videoHeight,
+                        encoding_type: 'face_features'
+                    };
+                    
+                    showDebugInfo('Generated face encoding with features');
+                    return JSON.stringify(faceEncodingData);
+                } else {
+                    showDebugInfo('Failed to generate face encoding features');
+                    return null;
+                }
+            } catch (error) {
+                showDebugInfo('Error generating face encoding: ' + error.message);
+                return null;
+            }
+        } catch (error) {
+            showDebugInfo('Error capturing video frame: ' + error.message);
+            return null;
+        }
+    } else {
+        showDebugInfo('Video not ready for capture. Ready state: ' + video.readyState + ', Dimensions: ' + video.videoWidth + 'x' + video.videoHeight);
+        return null;
+    }
+}
+
+function verifyAttendance() {
+    if (!faceVerified) {
+        alert('Please complete face recognition first.');
+        return;
+    }
+    
+    updateFaceStatus('Processing attendance verification...');
+    
+    // Since face is already verified, we don't need to capture again
+    // Just proceed with attendance marking using a simple verification token
+    const verificationToken = {
+        face_verified: true,
+        verification_time: new Date().toISOString(),
+        verification_type: 'face_recognition',
+        status: 'verified'
+    };
+    
+    // Get QR data
+    const qrData = getQRData();
+    console.log('QR Data for attendance verification:', qrData);
+    
+    // Send verification request with the token instead of face encoding
+    fetch('/face-recognition/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            action: 'verify_face',
+            face_encoding: JSON.stringify(verificationToken), // Send verification token
+            qr_data: qrData
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            updateFaceStatus('Face verified and attendance marked successfully!');
+            
+            // Store verification details in session
+            sessionStorage.setItem('verification_type', 'Face Recognition');
+            sessionStorage.setItem('verification_status', 'Success');
+            sessionStorage.setItem('attendance_id', data.attendance_id || 'N/A');
+            sessionStorage.setItem('verification_time', new Date().toLocaleString());
+            
+            // Show success message with verification type
+            alert('✅ Attendance verified successfully!\n\nVerification Type: Face Recognition\nStatus: Verified\nTime: ' + new Date().toLocaleString());
+            
+            // Redirect to success page
+            setTimeout(() => {
+                window.location.href = '{% url "qr_success" %}';
+            }, 2000);
+        } else if (data.status === 'already_marked') {
+            updateFaceStatus('Face verified, but attendance already marked for today!');
+            
+            // Store verification details in session
+            sessionStorage.setItem('verification_type', 'Face Recognition');
+            sessionStorage.setItem('verification_status', 'Already Marked');
+            sessionStorage.setItem('attendance_id', data.existing_record?.id || 'N/A');
+            sessionStorage.setItem('verification_time', new Date().toLocaleString());
+            
+            // Show already marked message
+            let message = '⚠️ Attendance already marked for today!\n\n';
+            message += 'Verification Type: Face Recognition\n';
+            message += 'Status: Already Marked\n';
+            message += 'Time: ' + new Date().toLocaleString();
+            
+            if (data.existing_record) {
+                message += `\n\nPrevious attendance marked at: ${data.existing_record.time}`;
+            }
+            
+            alert(message);
+            
+            // Still redirect to success page but with different status
+            setTimeout(() => {
+                window.location.href = '{% url "qr_success" %}';
+            }, 3000);
+        } else {
+            updateFaceStatus('Face verification failed: ' + data.message);
+            
+            // Show detailed alert for verification failure
+            let alertMessage = '❌ Face Verification Failed!\n\n';
+            alertMessage += 'Error: ' + data.message + '\n\n';
+            
+            if (data.liveness_status) {
+                alertMessage += 'Verification Details:\n';
+                alertMessage += '• Face Match: ' + (data.liveness_status.face_match ? 'Yes' : 'No') + '\n';
+                alertMessage += '• Liveness Verified: ' + (data.liveness_status.liveness_verified ? 'Yes' : 'No') + '\n';
+                alertMessage += '• Blink Count: ' + data.liveness_status.blink_count + '\n';
+                alertMessage += '• Head Moved: ' + (data.liveness_status.head_moved ? 'Yes' : 'No') + '\n\n';
+            }
+            
+            alertMessage += 'Please try again. Make sure to:\n';
+            alertMessage += '• Look directly at the camera\n';
+            alertMessage += '• Blink your eyes\n';
+            alertMessage += '• Move your head slightly\n';
+            alertMessage += '• Ensure good lighting';
+            
+            alert(alertMessage);
+            
+            faceVerified = false;
+            document.getElementById('verifyAttendance').disabled = true;
+            document.getElementById('verifyAttendance').classList.remove('btn-success');
+            document.getElementById('verifyAttendance').classList.add('btn-secondary');
+        }
+    })
+    .catch(error => {
+        updateFaceStatus('Error during verification: ' + error.message);
+        
+        // Show alert for network/technical errors
+        let alertMessage = '❌ Technical Error!\n\n';
+        alertMessage += 'Error: ' + error.message + '\n\n';
+        alertMessage += 'This might be a network issue or server problem.\n';
+        alertMessage += 'Please try again or contact support if the problem persists.';
+        
+        alert(alertMessage);
+        
+        faceVerified = false;
+        document.getElementById('verifyAttendance').disabled = true;
+    });
+}
+
+// Liveness detection functions
+function startLivenessCheck() {
+    if (livenessCheckInterval) {
+        clearInterval(livenessCheckInterval);
+    }
+    
+    livenessCheckInterval = setInterval(() => {
+        checkLivenessStatus();
+    }, 2000); // Check every 2 seconds
+}
+
+function stopLivenessCheck() {
+    if (livenessCheckInterval) {
+        clearInterval(livenessCheckInterval);
+        livenessCheckInterval = null;
+    }
+}
+
+function checkLivenessStatus() {
+    fetch('/liveness-status/', {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            updateLivenessDisplay(data.liveness_status);
+        }
+    })
+    .catch(error => {
+        console.error('Error checking liveness status:', error);
+    });
+}
+
+function updateLivenessDisplay(livenessStatus) {
+    const livenessDiv = document.getElementById('livenessStatus');
+    const blinkCountSpan = document.getElementById('blinkCount');
+    const headMovementSpan = document.getElementById('headMovement');
+    const livenessVerifiedSpan = document.getElementById('livenessVerified');
+    
+    if (livenessStatus.blink_count > 0 || livenessStatus.head_moved) {
+        livenessDiv.style.display = 'block';
+    }
+    
+    blinkCountSpan.textContent = livenessStatus.blink_count;
+    blinkCountSpan.className = livenessStatus.blink_count > 0 ? 'badge bg-success' : 'badge bg-info';
+    
+    headMovementSpan.textContent = livenessStatus.head_moved ? 'Detected' : 'Not Detected';
+    headMovementSpan.className = livenessStatus.head_moved ? 'badge bg-success' : 'badge bg-secondary';
+    
+    livenessVerifiedSpan.textContent = livenessStatus.liveness_verified ? 'Yes' : 'No';
+    livenessVerifiedSpan.className = livenessStatus.liveness_verified ? 'badge bg-success' : 'badge bg-warning';
+    
+    if (livenessStatus.liveness_verified) {
+        faceVerified = true;
+        updateFaceStatus('✅ Liveness detection completed! Face verified as real person.');
+        
+        // Update button states
+        document.getElementById('verifyAttendance').disabled = false;
+        document.getElementById('verifyAttendance').classList.remove('btn-secondary');
+        document.getElementById('verifyAttendance').classList.add('btn-success');
+        document.getElementById('verifyAttendance').innerHTML = '<i class="fas fa-check me-2"></i>Verify Attendance (Face Verified)';
+        
+        // Stop liveness checking
+        stopLivenessCheck();
+    }
+}
+
+function resetLivenessState() {
+    fetch('/reset-liveness/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showDebugInfo('Liveness state reset successfully');
+            faceVerified = false;
+            updateFaceStatus('Liveness state reset. Please start face recognition again.');
+            
+            // Reset button states
+            document.getElementById('verifyAttendance').disabled = true;
+            document.getElementById('verifyAttendance').classList.remove('btn-success');
+            document.getElementById('verifyAttendance').classList.add('btn-secondary');
+            document.getElementById('verifyAttendance').innerHTML = '<i class="fas fa-user-check me-2"></i>Verify Attendance';
+            
+            // Hide liveness status
+            document.getElementById('livenessStatus').style.display = 'none';
+        }
+    })
+    .catch(error => {
+        console.error('Error resetting liveness state:', error);
+    });
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Function to generate face encoding from image data (same as signup)
+function generateFaceEncoding(dataUrl) {
+    try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        
+        return new Promise((resolve, reject) => {
+            img.onload = function() {
+                try {
+                    // Create a temporary canvas to process the image
+                    const tempCanvas = document.createElement('canvas');
+                    const tempCtx = tempCanvas.getContext('2d');
+                    
+                    // Set canvas size
+                    tempCanvas.width = 100;
+                    tempCanvas.height = 100;
+                    
+                    // Draw and resize image
+                    tempCtx.drawImage(img, 0, 0, 100, 100);
+                    
+                    // Get image data
+                    const imageData = tempCtx.getImageData(0, 0, 100, 100);
+                    const data = imageData.data;
+                    
+                    // Convert to grayscale and normalize
+                    const features = [];
+                    for (let i = 0; i < data.length; i += 4) {
+                        // Convert RGB to grayscale
+                        const gray = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                        // Normalize to 0-1 range
+                        features.push(gray / 255);
+                    }
+                    
+                    // Add some statistical features
+                    const mean = features.reduce((a, b) => a + b, 0) / features.length;
+                    const variance = features.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / features.length;
+                    const std = Math.sqrt(variance);
+                    
+                    // Add statistical features to the encoding
+                    features.push(mean, variance, std);
+                    
+                    // Add histogram features (simplified)
+                    const histogram = new Array(32).fill(0);
+                    for (let i = 0; i < features.length - 3; i++) {
+                        const bin = Math.floor(features[i] * 31);
+                        histogram[bin]++;
+                    }
+                    // Normalize histogram
+                    const histSum = histogram.reduce((a, b) => a + b, 0);
+                    for (let i = 0; i < histogram.length; i++) {
+                        histogram[i] = histogram[i] / histSum;
+                    }
+                    features.push(...histogram);
+                    
+                    resolve(features);
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            
+            img.onerror = function() {
+                reject(new Error('Failed to load image'));
+            };
+            
+            img.src = dataUrl;
+        });
+    } catch (error) {
+        console.error('Error in generateFaceEncoding:', error);
+        return null;
+    }
+}
+
+// Clean up when page unloads
+window.addEventListener('beforeunload', function() {
+    if (faceRecognitionInterval) {
+        clearInterval(faceRecognitionInterval);
+    }
+    if (livenessCheckInterval) {
+        clearInterval(livenessCheckInterval);
+    }
+});
+</script>
+{% endblock %}

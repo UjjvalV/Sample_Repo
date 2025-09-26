@@ -1,0 +1,87 @@
+{% extends 'student/base.html' %}
+{% block title %}QR Code Expired{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <!-- Expired Icon -->
+                    <div class="mb-4">
+                        <i class="fas fa-clock fa-5x text-warning"></i>
+                    </div>
+                    
+                    <!-- Expired Message -->
+                    {% if error_message %}
+                    <div class="alert alert-danger mb-4">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Error</h5>
+                        <p class="mb-0">{{ error_message }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <h2 class="text-warning mb-3">QR Code Expired</h2>
+                    <p class="text-muted mb-4">
+                        The QR code you scanned has expired. QR codes are valid for 30 seconds for security purposes.
+                    </p>
+                    
+                    <!-- QR Code Details (if available) -->
+                    {% if qr_data %}
+                    <div class="alert alert-info text-start">
+                        <h6><i class="fas fa-info-circle me-2"></i>QR Code Details:</h6>
+                        <div class="small">
+                            <div><strong>Mode:</strong> {{ qr_data.mode|default:"N/A" }}</div>
+                            <div><strong>Class ID:</strong> {{ qr_data.class_id|default:"N/A" }}</div>
+                            <div><strong>Teacher ID:</strong> {{ qr_data.teacher_roll_no|default:"N/A" }}</div>
+                            <div><strong>Subject ID:</strong> {{ qr_data.subject_id|default:"N/A" }}</div>
+                            <div><strong>Generated Time:</strong> {{ qr_data.generated_time|default:"N/A" }}</div>
+                            <div><strong>Expired Time:</strong> {{ qr_data.expired_time|default:"N/A" }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Student Information -->
+                    <div class="alert alert-light text-start">
+                        <h6><i class="fas fa-user me-2"></i>Your Information:</h6>
+                        <div class="small">
+                            <div><strong>Student ID:</strong> {{ user.id }}</div>
+                            <div><strong>Name:</strong> {{ user.username }}</div>
+                            <div><strong>Roll Number:</strong> {% if student_profile %}{{ student_profile.roll_number }}{% else %}N/A{% endif %}</div>
+                            <div><strong>Class:</strong> {% if student_group %}{{ student_group.stream }} - {{ student_group.name }}{% else %}N/A{% endif %}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Instructions -->
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>What to do next:</h6>
+                        <ul class="list-unstyled mb-0">
+                            <li><i class="fas fa-check text-success me-2"></i>Ask your teacher to generate a new QR code</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Scan the new QR code immediately</li>
+                            <li><i class="fas fa-check text-success me-2"></i>QR codes refresh every 30 seconds automatically</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="mt-4">
+                        <a href="{% url 'qr_scanner' %}" class="btn btn-primary btn-lg me-3">
+                            <i class="fas fa-qrcode me-2"></i>
+                            Scan New QR Code
+                        </a>
+                        <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-home me-2"></i>
+                            Back to Dashboard
+                        </a>
+                    </div>
+                    
+                    <!-- Security Notice -->
+                    <div class="mt-4">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            This security feature prevents unauthorized attendance marking
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

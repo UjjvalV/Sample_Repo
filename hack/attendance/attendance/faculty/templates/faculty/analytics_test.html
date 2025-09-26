@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analytics Test - Class {{ class_id }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .card { background: #f8f9fa; padding: 20px; margin: 10px 0; border-radius: 8px; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Analytics Test Page</h1>
+        
+        <div class="card success">
+            <h3>✅ Template is working!</h3>
+            <p>Class ID: {{ class_id }}</p>
+            <p>Class Name: {{ class_name|default:"Not provided" }}</p>
+            <p>Total Students: {{ total_students|default:"Not provided" }}</p>
+        </div>
+        
+        <div class="card">
+            <h3>Test Chart</h3>
+            <canvas id="testChart" width="400" height="200"></canvas>
+        </div>
+        
+        <div class="card">
+            <h3>Test Data Loading</h3>
+            <button onclick="testDataLoad()">Test Data Load</button>
+            <div id="dataResult"></div>
+        </div>
+        
+        <div class="card">
+            <h3>Debug Info</h3>
+            <p>User: {{ user.username|default:"Not logged in" }}</p>
+            <p>Is Superuser: {{ user.is_superuser|default:"False" }}</p>
+            <p>Current URL: <span id="currentUrl"></span></p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Show current URL
+        document.getElementById('currentUrl').textContent = window.location.href;
+        
+        // Test chart
+        const ctx = document.getElementById('testChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                datasets: [{
+                    label: 'Test Data',
+                    data: [12, 19, 3, 5, 2],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: false
+            }
+        });
+        
+        // Test data loading
+        async function testDataLoad() {
+            const resultDiv = document.getElementById('dataResult');
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch(`/analytics/api/{{ class_id }}/`);
+                const data = await response.json();
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h4>✅ Data loaded successfully!</h4>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error loading data</h4>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

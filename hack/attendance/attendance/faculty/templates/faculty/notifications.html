@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Notifications</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .notifications-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            margin: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .page-header {
+            background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .notification-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-left: 5px solid #007bff;
+            transition: transform 0.3s ease;
+        }
+        .notification-card:hover {
+            transform: translateY(-3px);
+        }
+        .notification-card.unread {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        .notification-card.read {
+            border-left-color: #6c757d;
+            opacity: 0.8;
+        }
+        .notification-time {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="notifications-container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1><i class="fas fa-bell me-3"></i>Teacher Notifications</h1>
+                <p class="mb-0">Stay updated with student attendance activities</p>
+            </div>
+
+            <!-- Notification Stats -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card text-center bg-primary text-white">
+                        <div class="card-body">
+                            <i class="fas fa-bell fa-2x mb-2"></i>
+                            <h4>{{ total_notifications }}</h4>
+                            <p class="mb-0">Total Notifications</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center bg-danger text-white">
+                        <div class="card-body">
+                            <i class="fas fa-exclamation fa-2x mb-2"></i>
+                            <h4>{{ unread_count }}</h4>
+                            <p class="mb-0">Unread Notifications</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center bg-success text-white">
+                        <div class="card-body">
+                            <i class="fas fa-check fa-2x mb-2"></i>
+                            <h4>{{ total_notifications|add:"-"|add:unread_count }}</h4>
+                            <p class="mb-0">Read Notifications</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notifications List -->
+            <div class="row">
+                <div class="col-12">
+                    <h3><i class="fas fa-list me-2"></i>Recent Notifications</h3>
+                    
+                    {% if notifications %}
+                        {% for notification in notifications %}
+                        <div class="notification-card {% if not notification.is_read %}unread{% else %}read{% endif %}" 
+                             data-notification-id="{{ notification.id }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-2">
+                                        {% if notification.notification_type == 'attendance_marked' %}
+                                            <i class="fas fa-user-check text-success me-2"></i>
+                                        {% elif notification.notification_type == 'attendance_updated' %}
+                                            <i class="fas fa-user-edit text-warning me-2"></i>
+                                        {% else %}
+                                            <i class="fas fa-info-circle text-info me-2"></i>
+                                        {% endif %}
+                                        
+                                        <h5 class="mb-0">
+                                            {% if not notification.is_read %}
+                                                <span class="badge bg-danger me-2">New</span>
+                                            {% endif %}
+                                            {{ notification.notification_type|title|replace:"_":" " }}
+                                        </h5>
+                                    </div>
+                                    
+                                    <p class="mb-2">{{ notification.message }}</p>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <small class="text-muted">
+                                                <i class="fas fa-user me-1"></i>
+                                                Student: <strong>{{ notification.student.name }}</strong> ({{ notification.student.roll_number }})
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <small class="text-muted">
+                                                <i class="fas fa-clock me-1"></i>
+                                                {{ notification.created_at|date:"M d, Y H:i" }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if notification.attendance_record %}
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            Date: {{ notification.attendance_record.attendance_date }}
+                                            {% if notification.attendance_record.subject %}
+                                                | Subject: {{ notification.attendance_record.subject.name }}
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="ms-3">
+                                    {% if not notification.is_read %}
+                                        <button class="btn btn-sm btn-outline-primary mark-read-btn" 
+                                                data-notification-id="{{ notification.id }}">
+                                            <i class="fas fa-check me-1"></i>Mark Read
+                                        </button>
+                                    {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-check me-1"></i>Read
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                            <h4 class="text-muted">No notifications yet</h4>
+                            <p class="text-muted">You'll receive notifications when students mark their attendance.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <a href="/faculty/teacher" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-chart-line me-2"></i>View Analytics
+                    </a>
+                    <a href="/faculty/faculty-dashboard/" class="btn btn-outline-primary btn-lg me-3">
+                        <i class="fas fa-home me-2"></i>Dashboard
+                    </a>
+                    <a href="/logout/" class="btn btn-outline-danger btn-lg">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Mark notification as read
+        document.querySelectorAll('.mark-read-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const notificationId = this.dataset.notificationId;
+                const notificationCard = this.closest('.notification-card');
+                
+                fetch(`/faculty/notifications/${notificationId}/read/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Update UI
+                        notificationCard.classList.remove('unread');
+                        notificationCard.classList.add('read');
+                        this.innerHTML = '<i class="fas fa-check me-1"></i>Read';
+                        this.classList.remove('btn-outline-primary');
+                        this.classList.add('badge', 'bg-secondary');
+                        
+                        // Update unread count
+                        const unreadCountElement = document.querySelector('.bg-danger h4');
+                        if (unreadCountElement) {
+                            const currentCount = parseInt(unreadCountElement.textContent);
+                            unreadCountElement.textContent = currentCount - 1;
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        });
+        
+        // Auto-refresh notification count every 30 seconds
+        setInterval(function() {
+            fetch('/faculty/api/notification-count/')
+                .then(response => response.json())
+                .then(data => {
+                    const unreadCountElement = document.querySelector('.bg-danger h4');
+                    if (unreadCountElement) {
+                        unreadCountElement.textContent = data.unread_count;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching notification count:', error);
+                });
+        }, 30000);
+    </script>
+</body>
+</html>

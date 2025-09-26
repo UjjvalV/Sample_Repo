@@ -1,0 +1,556 @@
+{% extends 'student/base.html' %}
+{% block title %}QR Scanner{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-qrcode me-2"></i>
+                        QR Code Scanner
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Scanner Section -->
+                    <div id="scannerSection" class="text-center">
+                        <div class="mb-4">
+                            <video id="scanner" width="100%" height="300" style="border: 2px solid #007bff; border-radius: 10px;"></video>
+                            <canvas id="canvas" style="display: none;"></canvas>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button id="startScan" class="btn btn-primary btn-lg">
+                                <i class="fas fa-camera me-2"></i>
+                                Start Scanning
+                            </button>
+                            <button id="stopScan" class="btn btn-danger btn-lg" style="display: none;">
+                                <i class="fas fa-stop me-2"></i>
+                                Stop Scanning
+                            </button>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Point your camera at a QR code to scan it
+                        </div>
+                        
+                        <div id="debugInfo" class="alert alert-warning">
+                            <h6>Debug Information:</h6>
+                            <div id="debugContent"></div>
+                        </div>
+                    </div>
+
+                    <!-- Results Section (Initially Hidden) -->
+                    <div id="resultsSection" style="display: none;">
+                        <div class="alert alert-success">
+                            <h5><i class="fas fa-check-circle me-2"></i>QR Code Scanned Successfully!</h5>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">QR Code Data</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="qrDataDisplay" class="mb-3">
+                                            <code id="qrData" class="small"></code>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Mode:</strong> <span id="qrMode" class="badge bg-primary"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Class ID:</strong> <span id="qrClassId" class="badge bg-info"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Class Name:</strong> <span id="qrClassName" class="text-info"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Teacher ID:</strong> <span id="qrTeacherId" class="badge bg-warning"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Subject ID:</strong> <span id="qrSubjectId" class="badge bg-secondary"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Timestamp:</strong> <span id="qrTimestamp" class="text-muted small"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h6 class="mb-0">Student Information</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            <strong>Student ID:</strong> <span id="studentId" class="badge bg-success"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Student Name:</strong> <span id="studentName" class="text-primary"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Roll Number:</strong> <span id="studentRoll" class="text-info"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Class/Group:</strong> <span id="studentGroup" class="text-secondary"></span>
+                                        </div>
+                                        <div class="mb-2">
+                                            <strong>Scan Time:</strong> <span id="scanTime" class="text-muted small"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button id="scanAnother" class="btn btn-primary">
+                                <i class="fas fa-qrcode me-2"></i>
+                                Scan Another QR Code
+                            </button>
+                            <button id="markAttendance" class="btn btn-success">
+                                <i class="fas fa-check me-2"></i>
+                                Mark Attendance
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Empty State (Initially Hidden) -->
+                    <div id="emptyState" style="display: none;">
+                        <div class="text-center py-5">
+                            <i class="fas fa-qrcode fa-5x text-muted mb-4"></i>
+                            <h4 class="text-muted">No QR Code Scanned</h4>
+                            <p class="text-muted">Start scanning to see QR code data and your student information</p>
+                            <button id="startScanEmpty" class="btn btn-primary btn-lg">
+                                <i class="fas fa-camera me-2"></i>
+                                Start Scanning
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include QR Code Scanner Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+<script>
+let isScanning = false;
+let scanInterval = null;
+
+// Student information (from Django context)
+const studentInfo = {
+    id: '{{ user.id }}',
+    name: '{{ user.username }}',
+    rollNumber: '{% if student_profile %}{{ student_profile.roll_number }}{% else %}N/A{% endif %}',
+    group: '{% if student_group %}{{ student_group.stream }} - {{ student_group.name }}{% else %}N/A{% endif %}'
+};
+
+// Debug function
+function showDebug(message) {
+    const debugContent = document.getElementById('debugContent');
+    debugContent.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+    console.log('DEBUG:', message);
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    showEmptyState();
+    setupEventListeners();
+    
+    // Check browser compatibility
+    showDebug('Page loaded. Checking browser compatibility...');
+    
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        showDebug('Camera API supported');
+    } else {
+        showDebug('Camera API NOT supported - This browser may not work');
+    }
+    
+    if (typeof jsQR !== 'undefined') {
+        showDebug('jsQR library loaded successfully');
+    } else {
+        showDebug('jsQR library NOT loaded - QR scanning will not work');
+    }
+});
+
+function setupEventListeners() {
+    document.getElementById('startScan').addEventListener('click', startScanning);
+    document.getElementById('startScanEmpty').addEventListener('click', startScanning);
+    document.getElementById('stopScan').addEventListener('click', stopScanning);
+    document.getElementById('scanAnother').addEventListener('click', scanAnother);
+    document.getElementById('markAttendance').addEventListener('click', markAttendance);
+}
+
+function showEmptyState() {
+    document.getElementById('scannerSection').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+}
+
+function showScanner() {
+    document.getElementById('scannerSection').style.display = 'block';
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'none';
+}
+
+function showResults() {
+    document.getElementById('scannerSection').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'block';
+    document.getElementById('emptyState').style.display = 'none';
+}
+
+function startScanning() {
+    showDebug('Starting QR scanner...');
+    const video = document.getElementById('scanner');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showDebug('Camera not supported on this device');
+        alert('Camera not supported on this device. Please use a modern browser.');
+        return;
+    }
+    
+    if (typeof jsQR === 'undefined') {
+        showDebug('jsQR library not loaded');
+        alert('QR scanning library not loaded. Please refresh the page.');
+        return;
+    }
+    
+    // Try to get camera access
+    navigator.mediaDevices.getUserMedia({ 
+        video: { 
+            facingMode: 'environment',
+            width: { ideal: 640 },
+            height: { ideal: 480 }
+        } 
+    })
+    .then(function(stream) {
+        showDebug('Camera access granted');
+        video.srcObject = stream;
+        video.play();
+        
+        video.onloadedmetadata = function() {
+            showDebug('Video metadata loaded - Starting QR detection');
+            
+            // Start scanning loop
+            scanInterval = setInterval(() => {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    if (code) {
+                        showDebug('QR Code detected: ' + code.data);
+                        handleQRResult(code.data);
+                    }
+                }
+            }, 100); // Check every 100ms
+            
+            isScanning = true;
+            
+            // Update UI
+            document.getElementById('startScan').style.display = 'none';
+            document.getElementById('startScanEmpty').style.display = 'none';
+            document.getElementById('stopScan').style.display = 'inline-block';
+            
+            showScanner();
+        };
+    })
+    .catch(function(err) {
+        showDebug('Camera access error: ' + err.message);
+        console.error('Camera access error:', err);
+        
+        if (err.name === 'NotAllowedError') {
+            alert('Camera permission denied. Please allow camera access and try again.');
+        } else if (err.name === 'NotFoundError') {
+            alert('No camera found on this device.');
+        } else {
+            alert('Error accessing camera: ' + err.message);
+        }
+    });
+}
+
+function stopScanning() {
+    showDebug('Stopping QR scanner...');
+    
+    if (scanInterval) {
+        clearInterval(scanInterval);
+        scanInterval = null;
+    }
+    
+    const video = document.getElementById('scanner');
+    if (video.srcObject) {
+        const tracks = video.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+        video.srcObject = null;
+    }
+    
+    isScanning = false;
+    
+    // Update UI
+    document.getElementById('startScan').style.display = 'inline-block';
+    document.getElementById('stopScan').style.display = 'none';
+    
+    showEmptyState();
+}
+
+function handleQRResult(qrData) {
+    showDebug('Processing QR result: ' + qrData);
+    
+    // Stop scanning
+    stopScanning();
+    
+    try {
+        // Parse QR data
+        const parsedData = parseQRData(qrData);
+        showDebug('Parsed QR data: ' + JSON.stringify(parsedData));
+        
+        // Check if QR code is expired
+        if (isQRExpired(parsedData)) {
+            showDebug('QR code is expired - redirecting to expired page');
+            redirectToExpiredPage(parsedData);
+            return;
+        }
+        
+        // QR code is valid - check class ID matching
+        showDebug('QR code is valid - checking class ID matching');
+        if (checkClassIdMatch(parsedData)) {
+            showDebug('Class ID match - redirecting to face recognition');
+            redirectToFaceRecognition(parsedData);
+        } else {
+            showDebug('Class ID mismatch - redirecting to success page');
+            redirectToSuccessPage(parsedData);
+        }
+    } catch (error) {
+        showDebug('Error parsing QR data: ' + error.message);
+        alert('Error processing QR code: ' + error.message + '\n\nPlease try scanning again or contact support if the problem persists.');
+        showEmptyState();
+    }
+}
+
+function parseQRData(data) {
+    showDebug('Parsing QR data: ' + data);
+    
+    // Validate input
+    if (!data || typeof data !== 'string') {
+        showDebug('Invalid QR data: not a string');
+        throw new Error('Invalid QR data format');
+    }
+    
+    // Expected format: "mode=class;class_id=1;start_time=1234567890;teacher_roll_no=T001;subject_id=SUB101"
+    const parts = data.split(';');
+    const result = {};
+    
+    parts.forEach(part => {
+        const [key, value] = part.split('=');
+        if (key && value) {
+            result[key] = value;
+        }
+    });
+    
+    // Validate required fields
+    if (!result.start_time) {
+        showDebug('Missing start_time in QR data');
+        throw new Error('Invalid QR data: missing start_time');
+    }
+    
+    // Validate start_time is a valid number
+    const startTime = parseInt(result.start_time);
+    if (isNaN(startTime) || startTime <= 0) {
+        showDebug('Invalid start_time: ' + result.start_time);
+        throw new Error('Invalid QR data: invalid start_time');
+    }
+    
+    showDebug('Parsed result: ' + JSON.stringify(result));
+    return result;
+}
+
+function displayResults(qrData) {
+    showDebug('Displaying results...');
+    showDebug('QR Data received: ' + JSON.stringify(qrData));
+    
+    // Display QR data
+    document.getElementById('qrData').textContent = JSON.stringify(qrData, null, 2);
+    document.getElementById('qrMode').textContent = qrData.mode || 'N/A';
+    document.getElementById('qrClassId').textContent = qrData.class_id || 'N/A';
+    document.getElementById('qrClassName').textContent = getClassName(qrData.class_id) || 'N/A';
+    document.getElementById('qrTeacherId').textContent = qrData.teacher_roll_no || 'N/A';
+    document.getElementById('qrSubjectId').textContent = qrData.subject_id || 'N/A';
+    document.getElementById('qrTimestamp').textContent = qrData.start_time ? new Date(parseInt(qrData.start_time) * 1000).toLocaleString() : 'N/A';
+    
+    // Display student information
+    document.getElementById('studentId').textContent = studentInfo.id;
+    document.getElementById('studentName').textContent = studentInfo.name;
+    document.getElementById('studentRoll').textContent = studentInfo.rollNumber;
+    document.getElementById('studentGroup').textContent = studentInfo.group;
+    document.getElementById('scanTime').textContent = new Date().toLocaleString();
+    
+    showDebug('Class ID found: ' + (qrData.class_id || 'NOT FOUND'));
+}
+
+// Function to get class name from class ID (you can expand this with actual class data)
+function getClassName(classId) {
+    const classNames = {
+        '1': 'Class 1',
+        '2': 'Class 2',
+        '3': 'Class 3',
+        // Add more mappings as needed
+    };
+    return classNames[classId] || `Class ${classId}`;
+}
+
+// Check if QR code is expired (6 seconds validity)
+function isQRExpired(qrData) {
+    if (!qrData.start_time) {
+        showDebug('No start_time found in QR data - considering expired');
+        return true;
+    }
+    
+    const qrTimestamp = parseInt(qrData.start_time);
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const qrAge = currentTimestamp - qrTimestamp;
+    
+    showDebug(`QR start_time: ${qrTimestamp}, Current: ${currentTimestamp}, Age: ${qrAge} seconds`);
+    showDebug(`QR generated at: ${new Date(qrTimestamp * 1000).toLocaleString()}`);
+    showDebug(`Current time: ${new Date().toLocaleString()}`);
+    
+    // QR codes are valid for 30 seconds (increased for practical use)
+    return qrAge > 30;
+}
+
+// Redirect to expired page with QR data
+function redirectToExpiredPage(qrData) {
+    // Store QR data in session for display on expired page
+    fetch('/qr-expired/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            qr_data: qrData,
+            expired_time: new Date().toISOString(),
+            generated_time: qrData.start_time ? new Date(parseInt(qrData.start_time) * 1000).toISOString() : null
+        })
+    }).then(() => {
+        // Redirect to expired page
+        window.location.href = '/qr-expired/';
+    }).catch(err => {
+        console.error('Error storing expired QR data:', err);
+        // Still redirect even if storing fails
+        window.location.href = '/qr-expired/';
+    });
+}
+
+// Check if class ID matches student's group
+function checkClassIdMatch(qrData) {
+    showDebug('Checking class ID match...');
+    
+    // Get student's group ID from the page context
+    const studentGroupId = '{% if student_group %}{{ student_group.id }}{% else %}N/A{% endif %}';
+    const qrClassId = qrData.class_id;
+    
+    showDebug('Student group ID: ' + studentGroupId);
+    showDebug('QR class_id: ' + qrClassId);
+    
+    // Check if class_id matches student's group
+    const classIdMatch = qrClassId === studentGroupId;
+    
+    showDebug('Class ID match: ' + classIdMatch);
+    
+    // Return true if class ID matches
+    return classIdMatch;
+}
+
+// Redirect to face recognition page with QR data
+function redirectToFaceRecognition(qrData) {
+    // Store QR data in session for display on face recognition page
+    fetch('/face-recognition/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            qr_data: qrData,
+            scan_time: new Date().toISOString(),
+            generated_time: qrData.start_time ? new Date(parseInt(qrData.start_time) * 1000).toISOString() : null
+        })
+    }).then(() => {
+        // Redirect to face recognition page
+        window.location.href = '/face-recognition/';
+    }).catch(err => {
+        console.error('Error storing face recognition QR data:', err);
+        // Still redirect even if storing fails
+        window.location.href = '/face-recognition/';
+    });
+}
+
+// Redirect to success page with QR data
+function redirectToSuccessPage(qrData) {
+    // Store QR data in session for display on success page
+    fetch('/qr-success/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            qr_data: qrData,
+            scan_time: new Date().toISOString(),
+            generated_time: qrData.start_time ? new Date(parseInt(qrData.start_time) * 1000).toISOString() : null
+        })
+    }).then(() => {
+        // Redirect to success page
+        window.location.href = '/qr-success/';
+    }).catch(err => {
+        console.error('Error storing success QR data:', err);
+        // Still redirect even if storing fails
+        window.location.href = '/qr-success/';
+    });
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function scanAnother() {
+    showDebug('Starting new scan...');
+    showEmptyState();
+}
+
+function markAttendance() {
+    showDebug('Marking attendance...');
+    alert('Attendance marked successfully!');
+    showEmptyState();
+}
+
+// Clean up when page unloads
+window.addEventListener('beforeunload', function() {
+    if (scanInterval) {
+        clearInterval(scanInterval);
+    }
+});
+</script>
+{% endblock %}

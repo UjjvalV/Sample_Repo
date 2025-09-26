@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% block title %}Admin{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <h1 class="h4 mb-0">Admin Panel</h1>
+  <div class="ms-auto">
+    <button id="generateBtn" class="btn btn-primary">Generate Faculty Code</button>
+    <button id="copyBtn" class="btn btn-outline-secondary ms-2">Copy</button>
+    <span class="badge text-bg-secondary ms-2" id="codeBadge">{{ faculty_code }}</span>
+    <span class="ms-2 small text-muted" id="copyMsg"></span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header bg-white"><strong>All Users</strong></div>
+  <div class="table-responsive">
+    <table class="table table-striped table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Date Joined</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ u.name }}</td>
+          <td><a href="mailto:{{ u.email }}">{{ u.email }}</a></td>
+          <td>
+            {% if u.role == 'faculty' %}
+              <span class="badge text-bg-info">faculty</span>
+            {% elif u.role == 'admin' %}
+              <span class="badge text-bg-warning">admin</span>
+            {% else %}
+              <span class="badge text-bg-secondary">student</span>
+            {% endif %}
+          </td>
+          <td>{{ u.date_joined.strftime('%Y-%m-%d %H:%M') }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted">No users found</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const copyBtn = document.getElementById('copyBtn');
+  const generateBtn = document.getElementById('generateBtn');
+  const codeBadge = document.getElementById('codeBadge');
+  const copyMsg = document.getElementById('copyMsg');
+
+  copyBtn.addEventListener('click', async () => {
+    const text = codeBadge.textContent.trim();
+    try {
+      await navigator.clipboard.writeText(text);
+      copyMsg.textContent = 'Copied!';
+      setTimeout(()=> copyMsg.textContent = '', 1500);
+    } catch (e) {
+      copyMsg.textContent = 'Copy failed';
+      setTimeout(()=> copyMsg.textContent = '', 1500);
+    }
+  });
+
+  generateBtn.addEventListener('click', async () => {
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Generating...';
+    try {
+      const res = await fetch('/admin/generate_code', { method: 'POST' });
+      const data = await res.json();
+      codeBadge.textContent = data.code;
+    } catch (e) {
+      alert('Failed to generate code');
+    } finally {
+      generateBtn.disabled = false;
+      generateBtn.textContent = 'Generate Faculty Code';
+    }
+  });
+</script>
+{% endblock %}
+
+{% extends 'base.html' %}
+{% block title %}Admin Portal{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <h1 class="h3 mb-0">Admin Portal</h1>
+  <div class="ms-auto">
+    <button id="generateBtn" class="btn btn-primary">Generate Faculty Code</button>
+  </div>
+  <div class="ms-2">
+    <button id="copyBtn" class="btn btn-outline-secondary" data-bs-toggle="tooltip" data-bs-title="Copy to clipboard">Copy</button>
+  </div>
+  <div class="ms-2">
+    <span id="codeBadge" class="badge text-bg-secondary">{{ faculty_code }}</span>
+  </div>
+  <div class="ms-2 small text-muted" id="copyMsg"></div>
+  </div>
+
+<div class="card">
+  <div class="card-header bg-white">
+    <strong>All Users</strong>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-striped table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Name</th>
+          <th scope="col">Email</th>
+          <th scope="col">Role</th>
+          <th scope="col">Date Joined</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <th scope="row">{{ loop.index }}</th>
+          <td>{{ u.name }}</td>
+          <td><a href="mailto:{{ u.email }}">{{ u.email }}</a></td>
+          <td>
+            {% if u.role == 'faculty' %}
+              <span class="badge text-bg-info">faculty</span>
+            {% else %}
+              <span class="badge text-bg-secondary">student</span>
+            {% endif %}
+          </td>
+          <td>{{ u.date_joined.strftime('%Y-%m-%d %H:%M') }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" class="text-center text-muted">No users yet</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const copyBtn = document.getElementById('copyBtn');
+  const generateBtn = document.getElementById('generateBtn');
+  const codeBadge = document.getElementById('codeBadge');
+  const copyMsg = document.getElementById('copyMsg');
+
+  copyBtn.addEventListener('click', async () => {
+    const text = codeBadge.textContent.trim();
+    try {
+      await navigator.clipboard.writeText(text);
+      copyMsg.textContent = 'Copied!';
+      setTimeout(()=> copyMsg.textContent = '', 1500);
+    } catch (e) {
+      copyMsg.textContent = 'Copy failed';
+      setTimeout(()=> copyMsg.textContent = '', 1500);
+    }
+  });
+
+  generateBtn.addEventListener('click', async () => {
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Generating...';
+    try {
+      const res = await fetch('/admin/generate_code', { method: 'POST' });
+      const data = await res.json();
+      codeBadge.textContent = data.code;
+    } catch (e) {
+      alert('Failed to generate code');
+    } finally {
+      generateBtn.disabled = false;
+      generateBtn.textContent = 'Generate Faculty Code';
+    }
+  });
+</script>
+{% endblock %}
+
+

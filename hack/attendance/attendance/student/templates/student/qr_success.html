@@ -1,0 +1,236 @@
+{% extends 'student/base.html' %}
+{% block title %}QR Code Scanned Successfully{% endblock %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <!-- Success Icon -->
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle fa-5x text-success"></i>
+                    </div>
+                    
+                    <!-- Success Message -->
+                    {% if error_message %}
+                    <div class="alert alert-danger mb-4">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Error</h5>
+                        <p class="mb-0">{{ error_message }}</p>
+                    </div>
+                    {% else %}
+                    <h2 class="text-success mb-3" id="page-title">QR Code Scanned Successfully!</h2>
+                    <p class="text-muted mb-4" id="success-message">
+                        QR code scanned successfully. Class ID did not match your enrolled class, so face recognition was not required.
+                    </p>
+                    
+                    <!-- Verification Type Information -->
+                    <div class="alert alert-info mb-4" id="verification-info" style="display: none;">
+                        <h5><i class="fas fa-shield-alt me-2"></i>Verification Details</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Verification Type:</strong> <span id="verification-type" class="badge bg-primary">Standard QR Scan</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Status:</strong> <span id="verification-status" class="badge bg-success">Verified</span>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <strong>Attendance ID:</strong> <span id="attendance-id" class="text-muted">N/A</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Verification Time:</strong> <span id="verification-time" class="text-muted">N/A</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Scan Information -->
+                    {% if scan_info %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-success text-white">
+                                    <h6 class="mb-0"><i class="fas fa-qrcode me-2"></i>QR Code Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-2">
+                                        <strong>Subject ID:</strong> 
+                                        <span class="badge bg-primary">{{ scan_info.subject_id }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Class ID:</strong> 
+                                        <span class="badge bg-info">{{ scan_info.class_id }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Teacher Roll No:</strong> 
+                                        <span class="badge bg-warning">{{ scan_info.teacher_roll_no }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>QR Generated:</strong> 
+                                        <span class="text-muted small">{{ scan_info.generated_time }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="fas fa-user me-2"></i>Student Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-2">
+                                        <strong>Student ID:</strong> 
+                                        <span class="badge bg-success">{{ scan_info.student_id }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Student Name:</strong> 
+                                        <span class="text-primary">{{ user.username }}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Roll Number:</strong> 
+                                        <span class="text-info">{% if student_profile %}{{ student_profile.roll_number }}{% else %}N/A{% endif %}</span>
+                                    </div>
+                                    <div class="mb-2">
+                                        <strong>Class/Group:</strong> 
+                                        <span class="text-secondary">{% if student_group %}{{ student_group.stream }} - {{ student_group.name }}{% else %}N/A{% endif %}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Timing Information -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-clock me-2"></i>Scan Timing Details</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-4">
+                                    <div class="mb-2">
+                                        <strong>Scan Time:</strong>
+                                    </div>
+                                    <div class="text-muted small">{{ scan_info.scan_time|default:"N/A" }}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-2">
+                                        <strong>Time Difference:</strong>
+                                    </div>
+                                    <div class="text-success">
+                                        <strong>{{ scan_info.time_difference }} seconds</strong>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-2">
+                                        <strong>Status:</strong>
+                                    </div>
+                                    <div class="text-success">
+                                        <i class="fas fa-check-circle me-1"></i>
+                                        <strong>Valid</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- QR Code Details (if available) -->
+                    {% if qr_data %}
+                    <div class="alert alert-info text-start mt-4">
+                        <h6><i class="fas fa-info-circle me-2"></i>Raw QR Code Data:</h6>
+                        <div class="small">
+                            <div><strong>Mode:</strong> {{ qr_data.mode|default:"N/A" }}</div>
+                            <div><strong>Class ID:</strong> {{ qr_data.class_id|default:"N/A" }}</div>
+                            <div><strong>Teacher Roll No:</strong> {{ qr_data.teacher_roll_no|default:"N/A" }}</div>
+                            <div><strong>Subject ID:</strong> {{ qr_data.subject_id|default:"N/A" }}</div>
+                            <div><strong>Start Time:</strong> {{ qr_data.start_time|default:"N/A" }}</div>
+                            <div><strong>Generated Time:</strong> {{ qr_data.generated_time|default:"N/A" }}</div>
+                            <div><strong>Scan Time:</strong> {{ qr_data.scan_time|default:"N/A" }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Action Buttons -->
+                    <div class="mt-4">
+                        <a href="{% url 'qr_scanner' %}" class="btn btn-primary btn-lg me-3">
+                            <i class="fas fa-qrcode me-2"></i>
+                            Scan Another QR Code
+                        </a>
+                        <a href="{% url 'student_dashboard' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-home me-2"></i>
+                            Back to Dashboard
+                        </a>
+                    </div>
+                    
+                    <!-- Security Notice -->
+                    <div class="mt-4">
+                        <small class="text-muted">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            QR codes are valid for 6 seconds to ensure secure attendance marking
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Check for verification details from face recognition
+document.addEventListener('DOMContentLoaded', function() {
+    const verificationType = sessionStorage.getItem('verification_type');
+    const verificationStatus = sessionStorage.getItem('verification_status');
+    const attendanceId = sessionStorage.getItem('attendance_id');
+    const verificationTime = sessionStorage.getItem('verification_time');
+    
+    if (verificationType && verificationType === 'Face Recognition') {
+        // Check if attendance was already marked
+        if (verificationStatus === 'Already Marked') {
+            // Update the page for already marked status
+            document.getElementById('page-title').innerHTML = 'Attendance Already Marked';
+            document.getElementById('page-title').className = 'text-warning mb-3';
+            
+            // Change the icon to warning
+            const icon = document.querySelector('.fa-check-circle');
+            if (icon) {
+                icon.className = 'fas fa-exclamation-triangle fa-5x text-warning';
+            }
+            
+            // Update the success message
+            document.getElementById('success-message').innerHTML = 
+                'Face recognition completed successfully, but your attendance was already marked for today. No duplicate attendance was created.';
+            
+            // Show verification details
+            document.getElementById('verification-info').style.display = 'block';
+            document.getElementById('verification-type').textContent = 'Face Recognition';
+            document.getElementById('verification-type').className = 'badge bg-warning';
+            document.getElementById('verification-status').textContent = 'Already Marked';
+            document.getElementById('verification-status').className = 'badge bg-warning';
+            document.getElementById('attendance-id').textContent = attendanceId || 'N/A';
+            document.getElementById('verification-time').textContent = verificationTime || 'N/A';
+        } else {
+            // Update the success message for new attendance
+            document.getElementById('success-message').innerHTML = 
+                'QR code scanned successfully and face recognition completed! Your attendance has been verified and marked as present.';
+            
+            // Show verification details
+            document.getElementById('verification-info').style.display = 'block';
+            document.getElementById('verification-type').textContent = 'Face Recognition';
+            document.getElementById('verification-type').className = 'badge bg-success';
+            document.getElementById('verification-status').textContent = verificationStatus || 'Verified';
+            document.getElementById('verification-status').className = 'badge bg-success';
+            document.getElementById('attendance-id').textContent = attendanceId || 'N/A';
+            document.getElementById('verification-time').textContent = verificationTime || 'N/A';
+        }
+        
+        // Clear session storage
+        sessionStorage.removeItem('verification_type');
+        sessionStorage.removeItem('verification_status');
+        sessionStorage.removeItem('attendance_id');
+        sessionStorage.removeItem('verification_time');
+    }
+});
+</script>
+{% endblock %}
